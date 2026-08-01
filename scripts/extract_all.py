@@ -33,6 +33,8 @@ If a field is not present or unreadable, use null for that field.
 
 
 def clean_json_response(raw_text):
+    if '<think>' in raw_text and '</think>' not in raw_text:
+        raise ValueError("Response was cut off mid-reasoning (unclosed <think> block) — likely hit token limit")
     text = re.sub(r'<think>.*?</think>', '', raw_text, flags=re.DOTALL)
     text = text.strip()
     text = re.sub(r'^```(?:json)?\s*', '', text)
@@ -78,7 +80,7 @@ def extract_mistral(image_b64):
 def extract_groq(image_b64):
     resp = client_groq.chat.completions.create(
         model="qwen/qwen3.6-27b",
-        max_completion_tokens=4096,
+        max_completion_tokens=8192,
         messages=[
             {
                 "role": "user",
