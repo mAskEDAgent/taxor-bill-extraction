@@ -1,4 +1,4 @@
 model,total_cost_usd,avg_cost_per_bill_usd,files_with_real_usage,files_estimated
-gemini,0.005679,0.000437,0,13
-groq,0.013549,0.001042,0,13
-mistral,8.4e-05,6e-06,0,13
+gemini,0.005743,0.000442,1,12
+groq,0.035438,0.002726,13,0
+mistral,0.000948,7.3e-05,13,0

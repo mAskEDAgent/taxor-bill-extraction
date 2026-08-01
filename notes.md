@@ -212,6 +212,73 @@ Time based on general knowledge, but bill_13 succeeded a few hours after
 first hitting the 429 quota error). Not something to rely on/assume for
 future planning, but good to know it isn't necessarily a full 24h wait.
 
+## FINAL RESULTS (all 39 extractions successful, clean eval run)
+
+**Overall accuracy**: Gemini 85.9%, Groq 80.8%, Mistral 71.8%.
+
+Per-field breakdown (%):
+
+| Field       | Gemini | Groq | Mistral |
+| ----------- | ------ | ---- | ------- |
+| vendor      | 76.9   | 84.6 | 84.6    |
+| bill_number | 76.9   | 76.9 | 61.5    |
+| date        | 84.6   | 53.8 | 38.5    |
+| amount      | 100.0  | 92.3 | 69.2    |
+| currency    | 92.3   | 92.3 | 100.0   |
+| gst_details | 84.6   | 84.6 | 76.9    |
+
+Key takeaways:
+
+- **Gemini is the clear overall leader**, and specifically hits a perfect
+  100% on amount — the single most important field for real accounting/
+  bookkeeping use. Also strongest on date (84.6%), the field every model
+  struggles with most.
+- **Groq and Mistral tie on vendor** (84.6%, both beat Gemini here) —
+  interesting, since Gemini still wins overall; no single model dominates
+  every field.
+- **Date remains the hardest field for every model**, worst for Mistral
+  (38.5%) and Groq (53.8%). Handwritten digit sequences are genuinely
+  more ambiguous than words — good example to include in the write-up
+  (bill_01's date was read differently by more than one model; bill_03
+  caused Groq's reasoning to spiral entirely due to messy handwritten
+  amounts, see failure-mode note above).
+- **Mistral is weakest overall**, particularly on date and amount — the
+  two fields that matter most for actual bookkeeping accuracy.
+
+**Cost** (real usage data: 13/13 Mistral, 13/13 Groq, 1/13 Gemini — see
+limitation note below):
+
+| Model   | Avg cost/bill | Extrapolated to 100 bills |
+| ------- | ------------- | ------------------------- |
+| Mistral | $0.000073     | $0.0073                   |
+| Gemini  | $0.000442     | $0.0442                   |
+| Groq    | $0.002726     | $0.2726                   |
+
+- **Groq is clearly the most expensive per bill** despite being a
+  "free-tier" option — its $3.00/M output pricing plus the extra output
+  tokens spent on visible `<think>` reasoning add up. Worth noting: this
+  is Groq's real, complete cost (13/13 real usage), so this comparison
+  point is solid.
+- **Mistral is by far the cheapest.**
+- **Gemini's cost figure is NOT fully reliable** — only 1 of 13 files
+  (the bill_13 retry) has real usage data; the other 12 predate the
+  usage-logging fix and are estimated from output text length only,
+  missing image-input cost entirely. Gemini's true cost is likely higher
+  than $0.000442/bill shown here. State this explicitly as a limitation
+  in the write-up rather than presenting it as a clean number — don't
+  claim "Gemini beats Groq on cost" with full confidence; the accuracy
+  gap is well established, the cost comparison specifically involving
+  Gemini is not yet, on this data.
+
+**Bottom-line recommendation (draft, refine in Phase 6)**: for a
+production handwritten-bill pipeline, Gemini looks like the best default
+given its accuracy lead, especially on amount — the highest-stakes field.
+Groq's advantage on vendor name doesn't offset being 3-6x pricier per bill
+and having a real "fails to answer" failure mode Gemini/Mistral don't
+show. Mistral is the cheapest by a wide margin but the accuracy trade-off
+(especially on date) is significant enough that it's a harder sell unless
+cost is the dominant constraint.
+
 ## To revisit later (Phase 4 / write-up)
 
 - Rerun eval_all.py after retrying groq_bill_08 and gemini_bill_13, update
