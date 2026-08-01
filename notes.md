@@ -139,6 +139,26 @@ successfully retried, numbers will shift slightly. Don't quote this run's
 exact numbers as final in the write-up — rerun and use the post-retry
 version instead.
 
+## Second run results (38/39 files — groq_bill_08 retry succeeded, gemini_bill_13 still blocked on daily quota)
+
+Overall accuracy: Groq 80.8% (up from 73.1%), Gemini 78.2% (unchanged —
+still missing bill_13), Mistral 71.8% (unchanged).
+
+Groq's retry on bill_08 clearly wasn't a fluke previously — once it
+actually got a response, it jumped ahead of Gemini on vendor (84.6 vs
+69.2), bill_number (84.6 vs 69.2), amount (92.3, tied), and currency
+(92.3 vs 84.6). Groq is currently leading overall.
+
+**Important caveat — do not treat this as the final ranking.** Gemini's
+number is still artificially low because gemini_bill_13 has not
+successfully extracted yet (still hitting the free-tier daily quota cap —
+20 requests/day) and is being auto-scored as wrong on all 6 fields under
+the "parse failures count as wrong" rule. That's 12 of Gemini's 78
+field-scores being zeroed out due to an infra limit, not a real misread.
+Rerun eval_all.py once gemini_bill_13 finally succeeds (likely needs to
+wait for the daily quota to reset — try again the next day) before
+quoting a final "which model wins" conclusion in the write-up.
+
 ## To revisit later (Phase 4 / write-up)
 
 - Rerun eval_all.py after retrying groq_bill_08 and gemini_bill_13, update

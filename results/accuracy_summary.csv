@@ -1,4 +1,4 @@
 model,vendor,bill_number,date,amount,currency,gst_details
 gemini,69.2,69.2,76.9,92.3,84.6,76.9
-groq,76.9,76.9,46.2,84.6,84.6,69.2
+groq,84.6,84.6,53.8,92.3,92.3,76.9
 mistral,76.9,69.2,38.5,69.2,100.0,76.9
