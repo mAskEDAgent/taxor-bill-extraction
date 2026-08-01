@@ -1,0 +1,14 @@
+bill_id	vendor	bill_number	date	amount	currency	gst_details
+bill_01	bharat associates	4	2024-11-15	32345	INR	GST 9% mentioned
+bill_02	Govt. fruit preservation factory	1814	2016-07-08	720	INR	none visible
+bill_03	Indiana Restaurant Orchha		2022-01-08	260	INR	none visible
+bill_04	R.C.M Kirana Store	523	2024-11-11	7950	INR	none visible
+bill_05	Bajrang Kirana Stores			7180	INR	none visible
+bill_06	No food waste	40	2020-08-05	357	INR	none visible
+bill_07	indian oil corporation	729631	1986-07-22	105	INR	none visible
+bill_08	KalaKrisi Resource	1		9000	INR	none visible
+bill_09	bharath tent house	711	2024-07-22	2150	INR	none visible
+bill_10	Tanwer Books and Garments	2845	2024-01-05	140	INR	none visible
+bill_11	Navayug Bykes	1631	2019-11-13	3317	INR	none visible
+bill_12	Vanakkam Thala	1298		16	INR	none visible
+bill_13	Vishal Punjabi Vaishno Bhojanalya	1687	2007-05-22	146	INR	none visible
