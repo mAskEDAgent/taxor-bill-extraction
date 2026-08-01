@@ -279,6 +279,41 @@ show. Mistral is the cheapest by a wide margin but the accuracy trade-off
 (especially on date) is significant enough that it's a harder sell unless
 cost is the dominant constraint.
 
+## Phase 5 — Zoho Books integration progress
+
+- OAuth setup completed successfully on first real attempt. Full flow
+  confirmed working: Self Client (client_id + client_secret) → one-time
+  browser-generated authorization code → exchanged for refresh_token →
+  refresh_token used to mint a fresh access_token programmatically (this
+  last step is what the real script will do every time it runs, no more
+  manual browser steps needed going forward).
+
+- **Region matters**: account is India-based, so used `.in` domain
+  throughout, not `.com` — `accounts.zoho.in` for OAuth token exchange,
+  `www.zohoapis.in` for actual Books API calls (`api_domain` returned
+  directly in the token response, confirmed this explicitly rather than
+  assuming).
+
+- Organization created: "Taxor Test Org", India, INR, org_id
+  `60081141334`. All five needed credentials now live in `.env`:
+  `ZOHO_CLIENT_ID`, `ZOHO_CLIENT_SECRET`, `ZOHO_REFRESH_TOKEN`,
+  `ZOHO_API_DOMAIN`, `ZOHO_ORGANIZATION_ID`.
+
+- **Design decision**: Zoho's Expenses API requires every expense to be
+  mapped to a chart-of-accounts expense category (not just freeform
+  vendor/amount/date). Decided to use a single generic default account
+  (e.g. "Miscellaneous Expense" or similar) for all test entries, rather
+  than trying to have a model infer/assign categories per bill — the goal
+  here is proving the extraction-to-books pipeline works end-to-end, not
+  building real categorized bookkeeping. Worth a one-line mention in the
+  write-up: "category assignment was out of scope; a production version
+  would likely want the model to also suggest an expense category."
+
+- **Plan**: push 3-4 already-extracted bills (using Gemini's results,
+  since it's the most accurate model per Phase 4) into Zoho as real
+  expense entries, to demonstrate the full pipeline (image → extraction →
+  eval → real accounting system) works, not just extraction in isolation.
+
 ## To revisit later (Phase 4 / write-up)
 
 - Rerun eval_all.py after retrying groq_bill_08 and gemini_bill_13, update
