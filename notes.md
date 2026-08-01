@@ -74,3 +74,4 @@ what happened when writing the README later.
   as correct (leaning yes — both correctly recognized absence).
 - Note preview-model caveat for Groq explicitly in the final
   recommendation section.
+- gst_details scoring: switched from generic fuzzy string matching to     percentage-extraction matching, because verbose-but-correct answers (e.g. including GSTIN numbers) were being scored as "wrong" purely due to length/wording differences, not actual inaccuracy. Scoring now checks: (1) does presence/absence of GST agree, (2) if GST is present and ground truth specifies a rate, does at least one matching percentage appear in the model's answer.
