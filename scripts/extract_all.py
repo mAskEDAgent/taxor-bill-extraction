@@ -48,7 +48,11 @@ def extract_gemini(image_bytes):
             EXTRACTION_PROMPT
         ]
     )
-    return resp.text
+    usage = {
+        "input_tokens": resp.usage_metadata.prompt_token_count,
+        "output_tokens": resp.usage_metadata.candidates_token_count,
+    }
+    return resp.text, usage
 
 
 def extract_mistral(image_b64):
@@ -64,7 +68,11 @@ def extract_mistral(image_b64):
             }
         ]
     )
-    return resp.choices[0].message.content
+    usage = {
+        "input_tokens": resp.usage.prompt_tokens,
+        "output_tokens": resp.usage.completion_tokens,
+    }
+    return resp.choices[0].message.content, usage
 
 
 def extract_groq(image_b64):
@@ -80,7 +88,11 @@ def extract_groq(image_b64):
             }
         ]
     )
-    return resp.choices[0].message.content
+    usage = {
+        "input_tokens": resp.usage.prompt_tokens,
+        "output_tokens": resp.usage.completion_tokens,
+    }
+    return resp.choices[0].message.content, usage
 
 
 MODELS = {
@@ -117,9 +129,9 @@ for image_path in image_files:
 
         try:
             if model_name == "gemini":
-                raw_response = extract_fn(image_bytes)
+                raw_response, usage = extract_fn(image_bytes)
             else:
-                raw_response = extract_fn(image_b64)
+                raw_response, usage = extract_fn(image_b64)
 
             cleaned = clean_json_response(raw_response)
             parsed = json.loads(cleaned)
@@ -131,6 +143,7 @@ for image_path in image_files:
                 "parsed": parsed,
                 "parse_success": True,
                 "error": None,
+                "usage": usage,
             }
 
         except Exception as e:
@@ -141,12 +154,13 @@ for image_path in image_files:
                 "parsed": None,
                 "parse_success": False,
                 "error": str(e),
+                "usage": None,
             }
             print(f"  FAILED: {e}")
 
         with open(out_path, "w") as f:
             json.dump(result, f, indent=2)
 
-        time.sleep(1)  # small delay to avoid hammering rate limits
+        time.sleep(1)
 
 print("Done.")
