@@ -78,6 +78,7 @@ def extract_mistral(image_b64):
 def extract_groq(image_b64):
     resp = client_groq.chat.completions.create(
         model="qwen/qwen3.6-27b",
+        max_completion_tokens=4096,
         messages=[
             {
                 "role": "user",
