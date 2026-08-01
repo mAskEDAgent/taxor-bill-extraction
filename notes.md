@@ -65,13 +65,87 @@ what happened when writing the README later.
   plain string, which didn't match the ground truth format. Fixed by making
   the prompt explicitly require a short plain-text string for this field.
 
+## Eval methodology decisions (Phase 4 — for write-up "reasoning" section)
+
+- **Field-by-field scoring, not one blended accuracy number.** A single
+  average hides real differences — e.g. Groq beats Gemini on vendor and
+  bill_number even though Gemini has the higher overall average. Reporting
+  per-field lets someone pick the right model for the field they actually
+  care about, rather than trusting one misleading top-line score.
+
+- **Vendor name**: fuzzy string match (rapidfuzz `fuzz.ratio`), threshold
+  0.75 = correct. Chose fuzzy over exact because vendor names have harmless
+  variation (case, minor OCR-style slips) that shouldn't count as wrong.
+  0.75 picked by eyeballing real examples rather than guessing — worth
+  rechecking against a few more bills before finalizing this number in the
+  write-up.
+
+- **bill_number and amount**: numeric comparison after stripping commas/
+  currency symbols and casting to float. This fixes false negatives like
+  `"004"` (model, string) vs `4.0` (ground truth, float) — same value,
+  different representation. Plain `==` would have wrongly failed this.
+
+- **date**: exact match only, after normalizing both sides to lowercase
+  strings in YYYY-MM-DD. No fuzziness here on purpose — a wrong date is a
+  wrong date, this is a field where being "close" isn't good enough for
+  real accounting use.
+
+- **currency**: normalized exact match via a small mapping (`Rs`, `Rs.`,
+  `₹`, `rupees` → `INR`) before comparing. See currency gotcha above.
+
+- **gst_details**: switched from generic fuzzy string matching to a custom
+  percentage-extraction check, because verbose-but-correct answers (e.g.
+  including full GSTIN numbers) were scoring as "wrong" against a short
+  ground truth string purely due to length/wording, not actual inaccuracy.
+  Logic: (1) does presence/absence of GST agree between model and ground
+  truth, (2) if GST is present and ground truth specifies a rate, does at
+  least one matching percentage number appear anywhere in the model's
+  answer. This is a good example of "generic fuzzy matching isn't always
+  the right tool" — worth explicitly explaining this reasoning in the
+  write-up methodology section.
+
+- **Both blank = correct.** If ground truth has no value for a field (bill
+  genuinely doesn't show it) and the model also returned null/empty, that
+  counts as correct — the model correctly recognized the absence rather
+  than hallucinating a value. Implemented as an early check in
+  `score_field()` before any field-specific logic runs.
+
+- **Parse failures counted as wrong on every field**, not excluded from
+  the dataset. A model that can't even return valid JSON is a real failure
+  mode for this use case and should drag its score down accordingly, not
+  be quietly dropped from the average.
+
+## First full run results (39 files, 2 pending retries — bill_08 groq, bill_13 gemini still failed at this point)
+
+Overall accuracy: Gemini 78.2%, Groq 73.1%, Mistral 71.8%.
+
+Per-field, nothing is uniformly best:
+
+- Gemini leads on amount (92.3%) and currency (84.6%, tied with Groq).
+- Groq leads on vendor (76.9%, tied with Mistral) and bill_number (76.9%).
+- Mistral leads on currency alone (100%) but is worst on date (38.5%) and
+  amount (69.2%).
+- **Date is the weakest field for every model** (38.5–76.9%) — likely the
+  genuinely hardest field since handwritten digit sequences (e.g. "11" vs
+  "01") are more ambiguous than words. Good candidate for a specific
+  example/callout in the write-up (bill_01's date was misread differently
+  by more than one model).
+
+Note: these numbers include 2 results that failed due to infra issues, not
+model inaccuracy (Groq 503 overload on bill_08, Gemini daily quota
+exhausted on bill_13) — both auto-scored as wrong on all 6 fields under
+the "parse failures count as wrong" rule. Rerun eval after those two are
+successfully retried, numbers will shift slightly. Don't quote this run's
+exact numbers as final in the write-up — rerun and use the post-retry
+version instead.
+
 ## To revisit later (Phase 4 / write-up)
 
-- Decide + document the fuzzy-match threshold for vendor name comparison
-  (e.g. similarity >= 0.8 = "correct") — needs a clear justification in
-  the write-up, not just a number pulled from nowhere.
-- Decide whether "ground truth blank + model returned null" should count
-  as correct (leaning yes — both correctly recognized absence).
+- Rerun eval_all.py after retrying groq_bill_08 and gemini_bill_13, update
+  numbers above with the clean run.
+- Double check the 0.75 vendor fuzzy threshold still feels right once all
+  13 bills are clean — currently a judgment call, not rigorously tuned.
 - Note preview-model caveat for Groq explicitly in the final
-  recommendation section.
-- gst_details scoring: switched from generic fuzzy string matching to     percentage-extraction matching, because verbose-but-correct answers (e.g. including GSTIN numbers) were being scored as "wrong" purely due to length/wording differences, not actual inaccuracy. Scoring now checks: (1) does presence/absence of GST agree, (2) if GST is present and ground truth specifies a rate, does at least one matching percentage appear in the model's answer.
+  recommendation section (see model/setup quirks above).
+- Still need: cost calculation per model (token usage × pricing), Zoho
+  Books integration (Phase 5), final write-up (Phase 6).
