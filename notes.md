@@ -314,6 +314,34 @@ cost is the dominant constraint.
   expense entries, to demonstrate the full pipeline (image → extraction →
   eval → real accounting system) works, not just extraction in isolation.
 
+- **Two real API quirks hit and resolved while building this**:
+  1. `paid_through_account_id` and `account_id` (expense category) cannot
+     be the same account — Zoho rejects this with a clear error
+     (code 5038). Needed a genuinely separate Cash/Bank-type account for
+     the "paid through" side, not just any account.
+  2. The `filter_by=AccountType.Cash` query parameter silently returned
+     zero results even though a Cash account ("Petty Cash") existed —
+     turned out the real internal `account_type` value is lowercase
+     `cash` with no `AccountType.` prefix, not matching the filter syntax
+     from a first attempt. Fixed by dropping the filter and listing all
+     accounts unfiltered, then picking by name instead. Worth a mention
+     in the write-up as a real "docs vs actual API behavior" mismatch —
+     the kind of practical debugging that's part of doing an integration
+     for real, not just reading documentation.
+
+- **Result**: successfully pushed 4 real expense entries into Zoho Books
+  (bill_01, bill_04, bill_09, bill_10 — all from Gemini's extractions,
+  the most accurate model), using account_id = "Other Expenses"
+  (3997532000000000558) and paid_through_account_id = "Petty Cash"
+  (3997532000000000459). All 4 succeeded on the fixed script, confirmed
+  visible in the Zoho Books Expenses dashboard. This demonstrates the
+  full pipeline end-to-end: bill photo → AI extraction → evaluation →
+  real accounting system entry — not just extraction in isolation.
+
+- Not yet done: only pushed 4 of 13 bills, and only from one model
+  (Gemini). Fine as a proof-of-concept for the task's requirements, but
+  worth stating explicitly as scope rather than implying full coverage.
+
 ## To revisit later (Phase 4 / write-up)
 
 - Rerun eval_all.py after retrying groq_bill_08 and gemini_bill_13, update
@@ -322,5 +350,8 @@ cost is the dominant constraint.
   13 bills are clean — currently a judgment call, not rigorously tuned.
 - Note preview-model caveat for Groq explicitly in the final
   recommendation section (see model/setup quirks above).
-- Still need: cost calculation per model (token usage × pricing), Zoho
-  Books integration (Phase 5), final write-up (Phase 6).
+- ~~Still need: cost calculation per model~~ — DONE, see FINAL RESULTS
+  section above.
+- ~~Zoho Books integration (Phase 5)~~ — DONE, see Phase 5 section above.
+- Still need: final write-up (Phase 6) — pull together the FINAL RESULTS,
+  eval methodology, and Phase 5 sections above into the actual README.
