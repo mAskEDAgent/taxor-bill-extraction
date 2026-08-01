@@ -159,6 +159,59 @@ Rerun eval_all.py once gemini_bill_13 finally succeeds (likely needs to
 wait for the daily quota to reset — try again the next day) before
 quoting a final "which model wins" conclusion in the write-up.
 
+## Cost calculation (Phase 4, cost piece)
+
+Pricing used (checked against official docs / provider pages, Aug 2026):
+
+- Gemini 3.6 Flash: $1.50 / $7.50 per 1M input/output tokens
+- Mistral Pixtral 12B: $0.15 / $0.15 per 1M input/output tokens
+- Groq (Qwen 3.6 27B): $0.60 / $3.00 per 1M input/output tokens — output
+  is notably expensive relative to input on Groq specifically (5x), worth
+  flagging since it changes the cost picture for a reasoning model that
+  produces long `<think>` blocks before answering.
+
+**Important limitation to state explicitly in the write-up**: the first
+38 extraction results were captured before token-usage logging was added
+to the script, so their costs are estimated from output text length only
+(~4 chars/token heuristic) — input cost (which includes the image, the
+most expensive part of a vision call) could not be reconstructed after
+the fact for those files. Re-ran Mistral and Groq afterward (no daily cap
+risk, unlike Gemini) once usage-logging was added, so those two now have
+real per-call token costs. Gemini's bill_13 retry also succeeded same-day
+(quota reset sooner than the typical midnight-Pacific expectation) so it
+has real usage data too — meaning by the end, most/all files should have
+real usage. Don't report the early estimate-only cost numbers as final —
+use the numbers from the last full clean run.
+
+## Groq reasoning-loop failure mode (bill_03)
+
+Groq's model (Qwen 3.6 27B, via `<think>` reasoning) got stuck in an
+extended, unresolved internal monologue on bill_03 specifically — kept
+re-guessing handwritten amounts (130? 180? 260?) without ever reaching a
+final answer, so the response got cut off mid-thought with no closing
+`</think>` tag and no JSON at all. Raised `max_completion_tokens` from
+default to 4096, tried again — still failed on this specific bill (other
+bills fixed fine at 4096). This looks like a genuine model behavior, not
+a bug in the script: bill_03's amounts are legitimately messy/ambiguous
+handwriting, and Gemini/Mistral both still managed to produce an answer
+on it (right or wrong) while Groq's reasoning loop just never converged.
+
+This is worth a specific callout in the write-up: unlike Gemini/Mistral
+which always return _something_ (even if occasionally inaccurate), Groq's
+reasoning model can fail to answer at all on sufficiently ambiguous input
+— a real, distinct failure mode worth knowing about if choosing a model
+for a production pipeline (an extraction that error-cleanly is arguably
+safer than one that silently returns a plausible-looking wrong answer,
+but only if the pipeline actually checks for and handles "no answer").
+
+## Infra timing note
+
+Gemini's free-tier daily quota reset same-day rather than requiring a
+full wait until the next day (had assumed reset was ~midnight Pacific
+Time based on general knowledge, but bill_13 succeeded a few hours after
+first hitting the 429 quota error). Not something to rely on/assume for
+future planning, but good to know it isn't necessarily a full 24h wait.
+
 ## To revisit later (Phase 4 / write-up)
 
 - Rerun eval_all.py after retrying groq_bill_08 and gemini_bill_13, update
